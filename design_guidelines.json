@@ -1,0 +1,180 @@
+{
+  "project_name": "Sentinel Cloud Identity Dashboard",
+  "version": "1.0.0",
+  "instructions_to_main_agent": [
+    "You are the Lead Frontend Developer. Follow these guidelines strictly.",
+    "Do not ask clarifying questions. Make decisions based on this document.",
+    "Prioritize 'Cybersecurity' aesthetic: Dark mode should feel like a SOC (Security Operations Center). Light mode should feel like a clean Audit Report.",
+    "Use the provided image URLs for specific assets. Do not use placeholders.",
+    "Ensure all interactive elements have data-testid attributes.",
+    "Use 'sonner' for all toast notifications.",
+    "Use 'recharts' for all charts (install if missing).",
+    "Use 'lucide-react' for icons."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Avoid 'AI slop' aesthetic (generic centered layouts, excessive gradients).",
+    "Create depth with layered z-index and glassmorphism (backdrop-blur-md).",
+    "No universal 'transition: all'. Animate specific properties (transform, opacity, colors).",
+    "Do not center-align the main app container. Use full-width layouts.",
+    "Use modern button styles (sharp or pill), consistent with the 'Sentinel' theme.",
+    "Add micro-animations to all interactions (hover, active, focus).",
+    "Spacing: Use 2-3x more spacing than standard (e.g., p-6 or p-8 inside cards)."
+  ],
+  "theme_strategy": {
+    "default_mode": "dark",
+    "mode_toggle": true,
+    "style_name": "Sentinel",
+    "emotional_tone": "Secure, Precise, Alert, High-Tech"
+  },
+  "typography": {
+    "font_family": {
+      "headings": "Outfit, sans-serif",
+      "body": "Inter, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "scale": {
+      "h1": "text-4xl md:text-5xl font-bold tracking-tight",
+      "h2": "text-3xl font-semibold tracking-tight",
+      "h3": "text-2xl font-semibold",
+      "p": "text-base text-muted-foreground leading-relaxed",
+      "mono": "font-mono text-sm tracking-wide"
+    },
+    "installation_command": "npm install @fontsource/outfit @fontsource/inter @fontsource/jetbrains-mono"
+  },
+  "colors": {
+    "palette_name": "Cyber Defense",
+    "dark_mode": {
+      "background": "#020617",
+      "foreground": "#f8fafc",
+      "card": "#0f172a",
+      "card_foreground": "#f8fafc",
+      "popover": "#0f172a",
+      "popover_foreground": "#f8fafc",
+      "primary": "#3b82f6",
+      "primary_foreground": "#ffffff",
+      "secondary": "#1e293b",
+      "secondary_foreground": "#f8fafc",
+      "muted": "#1e293b",
+      "muted_foreground": "#94a3b8",
+      "accent": "#1e293b",
+      "accent_foreground": "#f8fafc",
+      "destructive": "#ef4444",
+      "destructive_foreground": "#ffffff",
+      "border": "#1e293b",
+      "input": "#1e293b",
+      "ring": "#3b82f6"
+    },
+    "light_mode": {
+      "background": "#ffffff",
+      "foreground": "#0f172a",
+      "card": "#ffffff",
+      "card_foreground": "#0f172a",
+      "popover": "#ffffff",
+      "popover_foreground": "#0f172a",
+      "primary": "#2563eb",
+      "primary_foreground": "#ffffff",
+      "secondary": "#f1f5f9",
+      "secondary_foreground": "#0f172a",
+      "muted": "#f1f5f9",
+      "muted_foreground": "#64748b",
+      "accent": "#f1f5f9",
+      "accent_foreground": "#0f172a",
+      "destructive": "#ef4444",
+      "destructive_foreground": "#ffffff",
+      "border": "#e2e8f0",
+      "input": "#e2e8f0",
+      "ring": "#2563eb"
+    },
+    "status_colors": {
+      "success": "#10b981",
+      "warning": "#f59e0b",
+      "error": "#ef4444",
+      "info": "#3b82f6",
+      "anomaly": "#8b5cf6"
+    }
+  },
+  "layout_structure": {
+    "grid_system": "Bento Grid (CSS Grid)",
+    "spacing_scale": "Relaxed (p-6, gap-6)",
+    "container_max_width": "max-w-7xl mx-auto",
+    "sidebar": {
+      "width": "w-64",
+      "collapsed_width": "w-16",
+      "bg": "bg-card/50 backdrop-blur-xl border-r border-border"
+    },
+    "header": {
+      "height": "h-16",
+      "bg": "bg-background/80 backdrop-blur-md sticky top-0 z-50 border-b border-border"
+    }
+  },
+  "components": {
+    "cards": {
+      "style": "Rounded-xl border border-border bg-card/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300",
+      "active_state": "border-primary/50 shadow-[0_0_15px_rgba(59,130,246,0.15)]"
+    },
+    "buttons": {
+      "primary": "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20",
+      "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+      "ghost": "hover:bg-accent hover:text-accent-foreground",
+      "destructive": "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+    },
+    "charts": {
+      "library": "recharts",
+      "style": "Minimalist, thin lines, gradient fills (opacity 0.2 to 0). Custom tooltips required."
+    },
+    "metrics": {
+      "style": "Big number (text-3xl+), small label (text-sm text-muted-foreground), trend indicator (green/red arrow)."
+    }
+  },
+  "visual_enhancers": {
+    "glassmorphism": "backdrop-blur-md bg-opacity-80",
+    "gradients": "Use subtle mesh gradients in backgrounds for 'Threat' sections.",
+    "borders": "1px solid border-border. Use 'ring' for focus states.",
+    "shadows": "shadow-sm for cards, shadow-xl for dropdowns/modals."
+  },
+  "motion": {
+    "library": "framer-motion (optional) or Tailwind CSS transitions",
+    "transitions": "transition-all duration-200 ease-in-out",
+    "hover_effects": "translate-y-[-2px] for interactive cards"
+  },
+  "assets": {
+    "images": {
+      "login_bg": {
+        "url": "https://images.unsplash.com/photo-1660836814985-8523a0d713b5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2MTJ8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMGN5YmVyc2VjdXJpdHklMjBkaWdpdGFsJTIwbmV0d29yayUyMGJhY2tncm91bmQlMjBkYXJrfGVufDB8fHx8MTc3MzQwMjY1MHww&ixlib=rb-4.1.0&q=85",
+        "alt": "Digital Security Network Abstract"
+      },
+      "user_avatar": {
+        "url": "https://images.unsplash.com/photo-1589220286904-3dcef62c68ee?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBoZWFkc2hvdCUyMHBvcnRyYWl0JTIwZGl2ZXJzZXxlbnwwfHx8fDE3NzMzODIxMzJ8MA&ixlib=rb-4.1.0&q=85",
+        "alt": "User Profile"
+      },
+      "logo_placeholder": "Use a Shield or Lock icon from Lucide-React (e.g., ShieldCheck)"
+    },
+    "icons": {
+      "library": "lucide-react",
+      "preferred_icons": [
+        "ShieldCheck", "Users", "AlertTriangle", "Activity", 
+        "Lock", "FileText", "Bell", "Search", "LogOut", "Moon", "Sun"
+      ]
+    }
+  },
+  "pages_structure": {
+    "login": {
+      "layout": "Split screen. Left: Branding/Art (60%), Right: Form (40%).",
+      "elements": ["Email Input", "Password Input", "Login Button", "Forgot Password Link"]
+    },
+    "dashboard": {
+      "layout": "Sidebar + Header + Main Content Grid",
+      "sections": [
+        "At-a-Glance Metrics (Grid 4 cols)",
+        "Threat & Anomaly Section (Full width chart + Alert List)",
+        "Access Hygiene & Offboarding (2 col grid)",
+        "Compliance & Credentials (2 col grid)"
+      ]
+    }
+  },
+  "accessibility": {
+    "contrast": "Ensure 4.5:1 ratio for normal text.",
+    "interactive": "All buttons must have visible focus states.",
+    "aria": "Use aria-label for icon-only buttons."
+  }
+}
