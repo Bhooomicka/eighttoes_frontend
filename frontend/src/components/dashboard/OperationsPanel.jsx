@@ -12,6 +12,28 @@ import { toast } from "sonner";
 
 const emptyWindow = { day_of_week: 1, start_hour: 2, end_hour: 4 };
 
+const LOCAL_OPERATIONS_STORAGE_KEY = "sentinel-local-operations";
+
+const DEFAULT_CONFIG = {
+  safe_mode_enabled: false,
+  peak_season_active: false,
+  maintenance_windows: []
+};
+
+const isBackendUnavailable = (error) => error?.code === "ERR_NETWORK" || !error?.response;
+
+const loadLocalConfig = () => {
+  try {
+    return JSON.parse(localStorage.getItem(LOCAL_OPERATIONS_STORAGE_KEY) || JSON.stringify(DEFAULT_CONFIG));
+  } catch {
+    return DEFAULT_CONFIG;
+  }
+};
+
+const saveLocalConfig = (config) => {
+  localStorage.setItem(LOCAL_OPERATIONS_STORAGE_KEY, JSON.stringify(config));
+};
+
 const dayLabel = (value) => ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][value] || "Day";
 
 const OperationsPanel = () => {
@@ -26,15 +48,26 @@ const OperationsPanel = () => {
 
   const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
   const canEdit = user?.role === "admin";
+  const isMockSession = token === "mock-token-12345";
 
   const fetchConfig = async () => {
+    if (isMockSession) {
+      setLoading(false);
+      setConfig(loadLocalConfig());
+      return;
+    }
     try {
       setLoading(true);
       const response = await axios.get(`${API}/settings/operations`, authHeaders);
       setConfig(response.data);
+      saveLocalConfig(response.data);
     } catch (error) {
       console.error("Failed to load operations config", error);
-      toast.error("Failed to load operations settings");
+      if (isBackendUnavailable(error)) {
+        setConfig(loadLocalConfig());
+      } else {
+        toast.error("Failed to load operations settings");
+      }
     } finally {
       setLoading(false);
     }
@@ -77,14 +110,26 @@ const OperationsPanel = () => {
   const handleSave = async () => {
     if (!canEdit) return;
 
+    if (isMockSession) {
+      saveLocalConfig(config);
+      toast.success("Operations settings saved locally (mock mode)");
+      return;
+    }
+
     setSaving(true);
     try {
       const response = await axios.put(`${API}/settings/operations`, config, authHeaders);
       setConfig(response.data.config);
+      saveLocalConfig(response.data.config);
       toast.success("Operations settings updated");
     } catch (error) {
       console.error("Failed to save operations settings", error);
-      toast.error(error.response?.data?.detail || "Failed to save operations settings");
+      if (isBackendUnavailable(error)) {
+        saveLocalConfig(config);
+        toast.success("Operations settings saved locally (offline mode)");
+      } else {
+        toast.error(error.response?.data?.detail || "Failed to save operations settings");
+      }
     } finally {
       setSaving(false);
     }

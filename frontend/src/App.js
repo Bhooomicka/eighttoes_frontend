@@ -28,7 +28,6 @@ const MOCK_USERS = [
   {
     id: "user-admin-001",
     email: "bhooomickadg@gmail.com",
-    password: "12345",
     name: "Bhooomicka",
     role: "admin",
     department: "Security"
@@ -36,7 +35,6 @@ const MOCK_USERS = [
   {
     id: "user-lead-001",
     email: "sarah.lead@company.com",
-    password: "lead123",
     name: "Margaret",
     role: "team_lead",
     department: "Security Operations"
@@ -44,16 +42,15 @@ const MOCK_USERS = [
   {
     id: "user-member-001",
     email: "john.doe@company.com",
-    password: "member123",
     name: "John Doe",
     role: "team_member",
     department: "Engineering"
   }
 ];
 
-const getMockUser = (email, password) => {
+const getMockUser = (email) => {
   const matchedUser = MOCK_USERS.find(
-    (mockUser) => mockUser.email === email && mockUser.password === password
+    (mockUser) => mockUser.email === email
   );
 
   if (matchedUser) {
@@ -173,7 +170,7 @@ const AuthProvider = ({ children }) => {
     } catch (error) {
       console.warn("Backend login failed, using mock login due to error:", error);
       const mockToken = "mock-token-12345";
-      const mockUser = getMockUser(email, password);
+      const mockUser = getMockUser(email);
       
       localStorage.setItem("sentinel-token", mockToken);
       localStorage.setItem("sentinel-mock-user", JSON.stringify(mockUser));

@@ -21,6 +21,22 @@ const STATUS_STYLES = {
   expired: "bg-purple-500/10 text-purple-400 border-purple-500/30"
 };
 
+const LOCAL_JIT_STORAGE_KEY = "sentinel-local-jit-requests";
+
+const isBackendUnavailable = (error) => error?.code === "ERR_NETWORK" || !error?.response;
+
+const loadLocalRequests = () => {
+  try {
+    return JSON.parse(localStorage.getItem(LOCAL_JIT_STORAGE_KEY) || "[]");
+  } catch {
+    return [];
+  }
+};
+
+const saveLocalRequests = (requests) => {
+  localStorage.setItem(LOCAL_JIT_STORAGE_KEY, JSON.stringify(requests));
+};
+
 const INITIAL_FORM = {
   account_id: "",
   account_type: "user",
@@ -40,15 +56,26 @@ const JITAccessPanel = () => {
 
   const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
   const canApprove = user?.role === "admin" || user?.role === "team_lead";
+  const isMockSession = token === "mock-token-12345";
 
   const fetchRequests = async () => {
+    if (isMockSession) {
+      setLoading(false);
+      setRequests(loadLocalRequests());
+      return;
+    }
     try {
       setLoading(true);
       const response = await axios.get(`${API}/jit-access/requests`, authHeaders);
       setRequests(response.data || []);
+      saveLocalRequests(response.data || []);
     } catch (error) {
       console.error("Failed to load JIT access requests", error);
-      toast.error("Failed to load JIT access requests");
+      if (isBackendUnavailable(error)) {
+        setRequests(loadLocalRequests());
+      } else {
+        toast.error("Failed to load JIT access requests");
+      }
     } finally {
       setLoading(false);
     }
@@ -64,6 +91,36 @@ const JITAccessPanel = () => {
   const handleCreate = async () => {
     if (!form.account_id.trim() || !form.justification.trim()) {
       toast.error("Account and justification are required");
+      return;
+    }
+
+    if (isMockSession) {
+      const now = new Date();
+      const canAutoActivate = canApprove;
+      const localItem = {
+        id: `local-jit-${Date.now()}`,
+        account_id: form.account_id.trim(),
+        account_type: form.account_type,
+        access_level: form.access_level,
+        resource_scope: form.resource_scope
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        justification: form.justification.trim(),
+        duration_minutes: Number(form.duration_minutes),
+        requested_by: user?.id || "local-user",
+        requested_at: now.toISOString(),
+        status: canAutoActivate ? "active" : "pending",
+        expires_at: canAutoActivate
+          ? new Date(now.getTime() + Number(form.duration_minutes) * 60 * 1000).toISOString()
+          : null
+      };
+      const next = [localItem, ...requests];
+      setRequests(next);
+      saveLocalRequests(next);
+      setOpen(false);
+      resetForm();
+      toast.success("JIT request saved locally (mock mode)");
       return;
     }
 
@@ -89,20 +146,96 @@ const JITAccessPanel = () => {
       await fetchRequests();
     } catch (error) {
       console.error("Failed to create JIT request", error);
-      toast.error(error.response?.data?.detail || "Failed to submit request");
+      if (isBackendUnavailable(error)) {
+        const now = new Date();
+        const canAutoActivate = canApprove;
+        const localItem = {
+          id: `local-jit-${Date.now()}`,
+          account_id: form.account_id.trim(),
+          account_type: form.account_type,
+          access_level: form.access_level,
+          resource_scope: form.resource_scope
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean),
+          justification: form.justification.trim(),
+          duration_minutes: Number(form.duration_minutes),
+          requested_by: user?.id || "local-user",
+          requested_at: now.toISOString(),
+          status: canAutoActivate ? "active" : "pending",
+          expires_at: canAutoActivate
+            ? new Date(now.getTime() + Number(form.duration_minutes) * 60 * 1000).toISOString()
+            : null
+        };
+        const next = [localItem, ...requests];
+        setRequests(next);
+        saveLocalRequests(next);
+        setOpen(false);
+        resetForm();
+        toast.success("JIT request saved locally (offline mode)");
+      } else {
+        toast.error(error.response?.data?.detail || "Failed to submit request");
+      }
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDecision = async (requestId, action) => {
+    if (isMockSession) {
+      const statusByAction = {
+        approve: "active",
+        reject: "rejected",
+        revoke: "revoked"
+      };
+      const next = requests.map((item) =>
+        item.id === requestId
+          ? {
+              ...item,
+              status: statusByAction[action] || item.status,
+              expires_at:
+                action === "approve"
+                  ? new Date(Date.now() + Number(item.duration_minutes || 60) * 60 * 1000).toISOString()
+                  : item.expires_at
+            }
+          : item
+      );
+      setRequests(next);
+      saveLocalRequests(next);
+      toast.success(`Request ${action}d (mock mode)`);
+      return;
+    }
+
     try {
       await axios.put(`${API}/jit-access/${requestId}/${action}`, { notes: `${action} from dashboard` }, authHeaders);
       toast.success(`Request ${action}d`);
       await fetchRequests();
     } catch (error) {
       console.error(`Failed to ${action} JIT request`, error);
-      toast.error(error.response?.data?.detail || `Failed to ${action} request`);
+      if (isBackendUnavailable(error)) {
+        const statusByAction = {
+          approve: "active",
+          reject: "rejected",
+          revoke: "revoked"
+        };
+        const next = requests.map((item) =>
+          item.id === requestId
+            ? {
+                ...item,
+                status: statusByAction[action] || item.status,
+                expires_at:
+                  action === "approve"
+                    ? new Date(Date.now() + Number(item.duration_minutes || 60) * 60 * 1000).toISOString()
+                    : item.expires_at
+              }
+            : item
+        );
+        setRequests(next);
+        saveLocalRequests(next);
+        toast.success(`Request ${action}d (offline mode)`);
+      } else {
+        toast.error(error.response?.data?.detail || `Failed to ${action} request`);
+      }
     }
   };
 

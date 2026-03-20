@@ -8,6 +8,30 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { BrainCircuit, RefreshCw, Siren, Activity } from "lucide-react";
 import { toast } from "sonner";
 
+const LOCAL_BEHAVIOR_STORAGE_KEY = "sentinel-local-behavior-summary";
+
+const DEFAULT_SUMMARY = {
+  profiles_built: 0,
+  anomalies_detected: 0,
+  high_severity_anomalies: 0,
+  profiles: [],
+  recent_anomalies: []
+};
+
+const isBackendUnavailable = (error) => error?.code === "ERR_NETWORK" || !error?.response;
+
+const loadLocalSummary = () => {
+  try {
+    return JSON.parse(localStorage.getItem(LOCAL_BEHAVIOR_STORAGE_KEY) || JSON.stringify(DEFAULT_SUMMARY));
+  } catch {
+    return DEFAULT_SUMMARY;
+  }
+};
+
+const saveLocalSummary = (summary) => {
+  localStorage.setItem(LOCAL_BEHAVIOR_STORAGE_KEY, JSON.stringify(summary));
+};
+
 const BehaviorBaseliningPanel = ({ onRefresh }) => {
   const { token, user } = useAuth();
   const [summary, setSummary] = useState({
@@ -22,16 +46,27 @@ const BehaviorBaseliningPanel = ({ onRefresh }) => {
 
   const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
   const canManage = user?.role === "admin" || user?.role === "team_lead";
+  const isMockSession = token === "mock-token-12345";
 
   const fetchSummary = async () => {
     if (!canManage) return;
+    if (isMockSession) {
+      setLoading(false);
+      setSummary(loadLocalSummary());
+      return;
+    }
     try {
       setLoading(true);
       const response = await axios.get(`${API}/behavioral/summary`, authHeaders);
       setSummary(response.data);
+      saveLocalSummary(response.data);
     } catch (error) {
       console.error("Failed to load behavioral summary", error);
-      toast.error("Failed to load behavioral baselining data");
+      if (isBackendUnavailable(error)) {
+        setSummary(loadLocalSummary());
+      } else {
+        toast.error("Failed to load behavioral baselining data");
+      }
     } finally {
       setLoading(false);
     }
@@ -43,6 +78,39 @@ const BehaviorBaseliningPanel = ({ onRefresh }) => {
   }, [token, user?.role]);
 
   const runAction = async (endpoint, successMessage) => {
+    if (isMockSession) {
+      const next = { ...summary };
+      if (endpoint === "/behavioral/recompute") {
+        next.profiles_built = Math.max(next.profiles_built || 0, 1);
+        if (!next.profiles?.length) {
+          next.profiles = [
+            {
+              account_id: user?.email || "local-user",
+              usual_hours: [9, 10, 11, 14, 15],
+              usual_locations: ["Local Dev"]
+            }
+          ];
+        }
+      }
+      if (endpoint === "/behavioral/simulate") {
+        const anomaly = {
+          id: `local-anomaly-${Date.now()}`,
+          account_id: user?.email || "local-user",
+          score: 72,
+          severity: "high",
+          reasons: ["Off-hours activity", "Unusual location"],
+          timestamp: new Date().toISOString()
+        };
+        next.anomalies_detected = (next.anomalies_detected || 0) + 1;
+        next.high_severity_anomalies = (next.high_severity_anomalies || 0) + 1;
+        next.recent_anomalies = [anomaly, ...(next.recent_anomalies || [])].slice(0, 5);
+      }
+      setSummary(next);
+      saveLocalSummary(next);
+      toast.success(`${successMessage} (mock mode)`);
+      return;
+    }
+
     setRunning(true);
     try {
       await axios.post(`${API}${endpoint}`, {}, authHeaders);
@@ -51,7 +119,39 @@ const BehaviorBaseliningPanel = ({ onRefresh }) => {
       onRefresh?.();
     } catch (error) {
       console.error(`Failed action for ${endpoint}`, error);
-      toast.error(error.response?.data?.detail || "Action failed");
+      if (isBackendUnavailable(error)) {
+        const next = { ...summary };
+        if (endpoint === "/behavioral/recompute") {
+          next.profiles_built = Math.max(next.profiles_built || 0, 1);
+          if (!next.profiles?.length) {
+            next.profiles = [
+              {
+                account_id: user?.email || "local-user",
+                usual_hours: [9, 10, 11, 14, 15],
+                usual_locations: ["Local Dev"]
+              }
+            ];
+          }
+        }
+        if (endpoint === "/behavioral/simulate") {
+          const anomaly = {
+            id: `local-anomaly-${Date.now()}`,
+            account_id: user?.email || "local-user",
+            score: 72,
+            severity: "high",
+            reasons: ["Off-hours activity", "Unusual location"],
+            timestamp: new Date().toISOString()
+          };
+          next.anomalies_detected = (next.anomalies_detected || 0) + 1;
+          next.high_severity_anomalies = (next.high_severity_anomalies || 0) + 1;
+          next.recent_anomalies = [anomaly, ...(next.recent_anomalies || [])].slice(0, 5);
+        }
+        setSummary(next);
+        saveLocalSummary(next);
+        toast.success(`${successMessage} (offline mode)`);
+      } else {
+        toast.error(error.response?.data?.detail || "Action failed");
+      }
     } finally {
       setRunning(false);
     }
